@@ -1,5 +1,8 @@
+.gitignore
 .venv/
 venv/
 contenido/*
 img/*
 logo/*
+html/*
+documento_combinado.pdf
