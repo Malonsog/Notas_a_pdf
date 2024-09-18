@@ -1,0 +1,79 @@
+body {
+    font-family: Roboto, Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+}
+
+h1,
+h2,
+h3 {
+    font-family: Montserrat, Arial, sans-serif;
+    color: #2C3E50;
+}
+
+img {
+    max-width: 50%;
+    height: auto;
+}
+
+/* Table Of Contents (Tabla de contenido) */
+.toc {
+    margin-bottom: 40px;
+}
+
+.toc ul {
+    list-style-type: none;
+}
+
+.toc li {
+    margin: 5px 0;
+}
+
+/* Salto de página */
+.salto-pagina {
+    page-break-after: always;
+}
+
+/* Contadores */
+/* body {
+    counter-reset: h1counter;
+}
+
+h1 {
+    counter-increment: h1counter;
+}
+
+h1::before {
+    content: counter(h1counter) ". ";
+} */
+
+/* Portada */
+.portada {
+    text-align: center;
+    margin-top: 200px;
+}
+
+.portada h1 {
+    font-size: 48px;
+    margin-bottom: 20px;
+}
+
+.portada h2 {
+    font-size: 36px;
+    margin-bottom: 10px;
+}
+
+.portada h3 {
+    font-size: 24px;
+    margin-bottom: 0px;
+}
+
+.portada p {
+    font-size: 24px;
+}
+
+.portada img.logo {
+    max-height: 200px;
+    margin-top: 20px;
+    margin-bottom: 80px;
+}
