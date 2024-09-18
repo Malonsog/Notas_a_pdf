@@ -30,9 +30,9 @@ Este proyecto es un script en Python que combina múltiples archivos Markdown en
 ### 1. Clonar el repositorio
 
 ```bash
-git clone https://github.com/tu_usuario/tu_repositorio.git
+git clone https://github.com/Malonsog/Notas_a_pdf.git
 
-cd tu_repositorio
+cd Notas_a_pdf
 ```
 
 ### 2. Crear un entorno virtual (opcional pero recomendado)
