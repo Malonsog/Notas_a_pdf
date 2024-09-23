@@ -1,4 +1,5 @@
 # Pasar Notas a PDF
+
 [![Python](https://img.shields.io/badge/Python-3.x-blue?logo=python&logoColor=white)](https://www.python.org/)
 
 Siempre he tenido la costumbre de tomar notas en archivos de texto simples cuando estudio, ya que un bloc de notas es la herramienta más sencilla y siempre está disponible. Con el tiempo, estas notas se han vuelto más complejas, y comencé a utilizar Markdown para resaltar títulos y subtítulos, y ocasionalmente agregar imágenes.
@@ -70,10 +71,9 @@ Descarga `wkhtmltopdf` desde [wkhtmltopdf.org](https://wkhtmltopdf.org/) y sigue
 ## Uso
 
 1. Coloca tus archivos Markdown en el directorio **/contenido**. Asegúrate de que los archivos:
-
-- Tengan la extensión **.md**.
-- Utilicen correctamente los encabezados **(#, ##, etc.)** para que se incluyan en la tabla de contenidos.
-- Las imágenes y recursos referenciados tengan rutas relativas correctas.
+    - Tengan la extensión **.md**.
+    - Utilicen correctamente los encabezados **(#, ##, etc.)** para que se incluyan en la tabla de contenidos.
+    - Las imágenes y recursos referenciados tengan rutas relativas correctas.
 
 2. Ejecuta el script **pasar_notas_a_pdf.py**:
 
@@ -83,7 +83,59 @@ python pasar_notas_a_pdf.py
 
 Esto generará un archivo PDF llamado **documento_combinado.pdf** en el directorio actual, con el contenido de los archivos combinados y una tabla de contenidos en base a los títulos.
 
-## Estructura del Proyecto
+### Argumentos Disponibles
+
+- `--sin-portada`: No incluir la portada en el PDF.
+- `--sin-toc`: No incluir la tabla de contenidos.
+- `--sin-numeracion`: No incluir números de página en el PDF.
+- `--guardar-html`: Guardar los archivos HTML generados.
+- `--directorio [ruta]`: Especifica el directorio con los archivos Markdown (por defecto `./contenido`).
+- `--css [ruta]`: Ruta al archivo CSS para estilizar el documento (por defecto `./estilos/estilo.css`).
+- `--metadatos [ruta]`: Ruta al archivo de metadatos YAML para la portada (por defecto `./metadatos/metadatos.yaml`).
+- `--logo [ruta]`: Ruta al directorio del logotipo para la portada (por defecto `./logo`).
+- `--salida [nombre]`: Nombre del archivo PDF de salida (por defecto `documento_combinado.pdf`).
+
+### Ejemplos de uso
+
+- **Generar PDF con configuración por defecto:**
+
+```bash
+python pasar_notas_a_pdf.py
+```
+
+- **Generar PDF sin portada y sin tabla de contenidos::**
+
+```bash
+python pasar_notas_a_pdf.py --sin-portada --sin-toc
+```
+
+- **Generar PDF sin numeración de páginas:**
+
+```bash
+python pasar_notas_a_pdf.py --sin-numeracion
+```
+
+- **Especificar directorio de archivos y nombre de salida:**
+
+```bash
+python pasar_notas_a_pdf.py --directorio ./mis_notas --salida mis_apuntes.pdf
+```
+
+- **Guardar los archivos HTML generados:**
+
+```bash
+python pasar_notas_a_pdf.py --guardar-html
+```
+
+### Ayuda adicional
+
+Para ver una descripción completa de los argumentos disponibles y obtener ayuda sobre cómo utilizar el script, ejecuta:
+
+```bash
+python pasar_notas_a_pdf.py --help
+```
+
+## Estructura por defecto
 
 ```graphql
 ├── contenido                 # Directorio con los archivos Markdown
@@ -128,18 +180,21 @@ Puedes personalizar los estilos del documento modificando el archivo **estilos/e
 
 ### Modificar Rutas y Nombres de Archivos
 
-Si deseas cambiar las rutas de los directorios o los nombres de los archivos, puedes editar la función **main()** en el script **pasar_notas_a_pdf.py**:
+Puedes cambiar las rutas de los directorios y los nombres de los archivos utilizando los argumentos de línea de comandos al ejecutar el script, sin necesidad de editar el código fuente. Los argumentos disponibles son:
 
-```python
-def main():
-    directorio_markdown = "./contenido"
-    ruta_css = "./estilos/estilo.css"
-    ruta_metadatos = "./metadatos/metadatos.yaml"
-    ruta_logo = "./logo"
-    ruta_html = "./html"
-    salida_pdf = "documento_combinado.pdf"
-    # ...
+- `--directorio [ruta]`: Especifica el directorio con los archivos Markdown (por defecto `./contenido`).
+- `--css [ruta]`: Ruta al archivo CSS para estilizar el documento (por defecto `./estilos/estilo.css`).
+- `--metadatos [ruta]`: Ruta al archivo de metadatos YAML para la portada (por defecto `./metadatos/metadatos.yaml`).
+- `--logo [ruta]`: Ruta al directorio del logotipo para la portada (por defecto `./logo`).
+- `--salida [nombre]`: Nombre del archivo PDF de salida (por defecto `documento_combinado.pdf`).
+
+**Ejemplo:**
+
+```bash
+python pasar_notas_a_pdf.py --directorio ./mis_notas --css ./estilos/mi_estilo.css --metadatos ./mis_metadatos.yaml --logo ./imagenes/logo --salida mi_documento.pdf
 ```
+
+Esto permite una mayor flexibilidad y evita la necesidad de modificar el código del script cada vez que desees cambiar estas configuraciones.
 
 ### Ajustar la Profundidad de la Tabla de Contenidos
 

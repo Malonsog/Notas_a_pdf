@@ -4,6 +4,7 @@ import markdown
 import pdfkit
 import re
 import yaml
+import argparse
 
 
 def cargar_metadatos(ruta_metadatos):
@@ -44,12 +45,12 @@ def ajustar_rutas_imagenes(contenido_md, ruta_actual):
     return contenido_ajustado
 
 
-def combinar_markdown_a_html(archivos, ruta_css=None, ruta_logo=None, metadatos=None):
+def combinar_markdown_a_html(archivos, ruta_css=None, ruta_logo=None, metadatos=None, incluir_toc=True):
     """Combina varios archivos Markdown en HTML para la portada y el contenido principal."""
     # Construir el encabezado HTML
     html_head = "<!DOCTYPE html>\n<html>\n<head>\n<meta charset='utf-8'>\n"
     if ruta_css and os.path.exists(ruta_css):
-        with open(ruta_css, "r", encoding="utf-8") as f:
+        with open(ruta_css, 'r', encoding='utf-8') as f:
             css = f.read()
             html_head += f"<style>\n{css}\n</style>\n"
     html_head += "</head>\n<body>\n"
@@ -84,19 +85,26 @@ def combinar_markdown_a_html(archivos, ruta_css=None, ruta_logo=None, metadatos=
 
     # Generar el contenido principal
     cuerpo = html_head
-    # Placeholder para la TOC
-    cuerpo += "<h1>Tabla de Contenidos</h1>\n<div class='toc'>{{TOC}}</div>\n"
-    # Agregar un salto de página después de la TOC
-    cuerpo += '<div class="salto-pagina"></div>\n'
+
+    # Incluir TOC si se especifica
+    if incluir_toc:
+        # Placeholder para la TOC
+        cuerpo += "<h1>Tabla de Contenidos</h1>\n<div class='toc'>{{TOC}}</div>\n"
+        # Agregar un salto de página después de la TOC
+        cuerpo += '<div class="salto-pagina"></div>\n'
 
     # Combinar el contenido de los archivos
+    md_extensions = ["extra", "tables"]
+    if incluir_toc:
+        md_extensions.append("toc")
+
     md = markdown.Markdown(
-        extensions=["extra", "toc", "tables"],
+        extensions=md_extensions,
         extension_configs={
             "toc": {
                 "toc_depth": "1-2",  # Incluye encabezados de nivel 1 y 2 en TOC
             }
-        },
+        } if incluir_toc else {},
     )
 
     for index, archivo in enumerate(archivos):
@@ -110,17 +118,18 @@ def combinar_markdown_a_html(archivos, ruta_css=None, ruta_logo=None, metadatos=
             if index < len(archivos) - 1:
                 cuerpo += '<div style="page-break-after: always;"></div>\n'
 
-    # Reemplazar el placeholder con la TOC generada
-    toc_html = md.toc
-    cuerpo = cuerpo.replace("{{TOC}}", toc_html)
+    # Reemplazar el placeholder con la TOC generada si se incluyó
+    if incluir_toc:
+        toc_html = md.toc
+        cuerpo = cuerpo.replace('{{TOC}}', toc_html)
 
     cuerpo += html_tail
 
     return portada, cuerpo
 
 
-def convertir_html_a_pdf(portada, cuerpo, salida_pdf, ruta_html, metadatos):
-    """Convierte contenido HTML a PDF usando pdfkit, incluyendo números de página (excepto en la portada si existe)."""
+def convertir_html_a_pdf(portada, cuerpo, salida_pdf, ruta_html, metadatos, incluir_portada=True, numerar_paginas=True, guardar_html=False):
+    """Convierte contenido HTML a PDF usando pdfkit, con opciones para portada y numeración de páginas."""
     opciones_pdf = {
         'page-size': 'Letter',
         'margin-top': '0.75in',
@@ -129,12 +138,16 @@ def convertir_html_a_pdf(portada, cuerpo, salida_pdf, ruta_html, metadatos):
         'margin-left': '0.75in',
         'encoding': 'UTF-8',
         'enable-local-file-access': '',
-        # Opciones para el pie de página en el contenido principal
-        'footer-right': 'Página [page] de [toPage]',
-        'footer-font-size': '9',
-        'footer-spacing': '5',
-        'footer-line': '',
     }
+
+    # Opciones para el pie de página si se numeran las páginas
+    if numerar_paginas:
+        opciones_pdf.update({
+            'footer-right': 'Página [page] de [toPage]',
+            'footer-font-size': '9',
+            'footer-spacing': '5',
+            'footer-line': '',
+        })
 
     # Rutas para guardar los archivos HTML
     ruta_cuerpo = os.path.join(ruta_html, 'cuerpo.html')
@@ -150,15 +163,16 @@ def convertir_html_a_pdf(portada, cuerpo, salida_pdf, ruta_html, metadatos):
     # Configurar la ruta a wkhtmltopdf si no está en el PATH
     config = pdfkit.configuration()
 
-    # Si hay portada, guardarla y ajustar las opciones
-    if portada:
+    # Si hay portada y se incluye, ajustamos opciones
+    if portada and incluir_portada:
         ruta_portada = os.path.join(ruta_html, 'portada.html')
         with open(ruta_portada, 'w', encoding='utf-8') as f:
             f.write(portada)
-        # Ajustar opciones para la portada
-        opciones_pdf['page-offset'] = '-1'  # Resta 1 al número de página
+        # Ajustar la numeración si se numeran las páginas
+        if numerar_paginas:
+            opciones_pdf['page-offset'] = '-1'  # Resta 1 al número de página
 
-        # Generar el PDF con la portada usando el argumento 'cover'
+        # Generar el PDF con la portada
         pdfkit.from_file(
             ruta_cuerpo,
             salida_pdf,
@@ -167,9 +181,9 @@ def convertir_html_a_pdf(portada, cuerpo, salida_pdf, ruta_html, metadatos):
             cover=ruta_portada
         )
     else:
-        # Sin portada, iniciar la numeración desde la primera página
-        opciones_pdf['page-offset'] = '0'
-
+        # Sin portada
+        if numerar_paginas:
+            opciones_pdf['page-offset'] = '0'
         # Generar el PDF sin portada
         pdfkit.from_file(
             ruta_cuerpo,
@@ -178,36 +192,73 @@ def convertir_html_a_pdf(portada, cuerpo, salida_pdf, ruta_html, metadatos):
             configuration=config
         )
 
+    # Eliminar los archivos HTML si no se deben guardar
+    if not guardar_html:
+        os.remove(ruta_cuerpo)
+        if portada and incluir_portada:
+            os.remove(ruta_portada)
 
 
 def main():
-    directorio_markdown = "./contenido"  # Directorio con los archivos Markdown
-    ruta_css = "./estilos/estilo.css"  # Ruta al archivo CSS
-    ruta_metadatos = "./metadatos/metadatos.yaml"  # Ruta al archivo de metadatos
-    ruta_logo = "./logo"  # Ruta al logotipo para la portada
-    ruta_html = "./html"  # Ruta para los archivos HTML generados
-    salida_pdf = "documento_combinado.pdf"  # Nombre del archivo PDF final
+    # Configurar el analizador de argumentos
+    parser = argparse.ArgumentParser(description='Genera un PDF a partir de archivos Markdown.')
 
-    # Cargar los metadatos del documento
-    metadatos = cargar_metadatos(ruta_metadatos)
+    # Definir los argumentos existentes y agregar el nuevo
+    parser.add_argument('--sin-portada', action='store_true', help='No incluir la portada en el PDF.')
+    parser.add_argument('--sin-toc', action='store_true', help='No incluir la tabla de contenidos.')
+    parser.add_argument('--sin-numeracion', action='store_true', help='No incluir números de página en el PDF.')
+    parser.add_argument('--guardar-html', action='store_true', help='Guardar los archivos HTML generados.')
+    parser.add_argument('--directorio', default='./contenido', help='Directorio que contiene los archivos Markdown.')
+    parser.add_argument('--css', default='./estilos/estilo.css', help='Ruta al archivo CSS.')
+    parser.add_argument('--metadatos', default='./metadatos/metadatos.yaml', help='Ruta al archivo de metadatos.')
+    parser.add_argument('--logo', default='./logo', help='Ruta al directorio del logotipo.')
+    parser.add_argument('--salida', default='documento_combinado.pdf', help='Nombre del archivo PDF de salida.')
+
+    # Analizar los argumentos
+    args = parser.parse_args()
+
+    # Variables basadas en los argumentos
+    directorio_markdown = args.directorio
+    ruta_css = args.css
+    ruta_metadatos = args.metadatos
+    ruta_logo = args.logo
+    ruta_html = "./html"  # Puedes hacerlo opcional si lo deseas
+    salida_pdf = args.salida
+
+    # Cargar los metadatos del documento solo si se incluye la portada
+    if not args.sin_portada:
+        metadatos = cargar_metadatos(ruta_metadatos)
+    else:
+        metadatos = None
 
     archivos = obtener_archivos_markdown(directorio_markdown)
     if not archivos:
-        print(
-            f"No se encontraron archivos Markdown en el directorio {directorio_markdown}."
-        )
+        print(f"No se encontraron archivos Markdown en el directorio {directorio_markdown}.")
         return
 
-    print(
-        f"{len(archivos)} archivos Markdown encontrados en el directorio {directorio_markdown}"
-    )
+    print(f"{len(archivos)} archivos Markdown encontrados en el directorio {directorio_markdown}")
 
     # Obtener el HTML de la portada y del contenido principal
-    # Si no hay metadatos, no se generará la portada
-    portada, cuerpo = combinar_markdown_a_html(archivos, ruta_css, ruta_logo, metadatos)
+    portada, cuerpo = combinar_markdown_a_html(
+        archivos,
+        ruta_css,
+        ruta_logo,
+        metadatos,
+        incluir_toc=not args.sin_toc
+    )
 
     # Convertir HTML a PDF
-    convertir_html_a_pdf(portada, cuerpo, salida_pdf, ruta_html, metadatos)
+    convertir_html_a_pdf(
+        portada,
+        cuerpo,
+        salida_pdf,
+        ruta_html,
+        metadatos,
+        incluir_portada=not args.sin_portada,
+        numerar_paginas=not args.sin_numeracion,
+        guardar_html=args.guardar_html
+    )
+
 
     print(f"PDF generado exitosamente: {salida_pdf}")
 
