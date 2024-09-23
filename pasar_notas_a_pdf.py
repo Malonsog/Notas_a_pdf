@@ -5,15 +5,17 @@ import pdfkit
 import re
 import yaml
 
+
 def cargar_metadatos(ruta_metadatos):
     """Carga los metadatos del documento desde un archivo YAML si existe."""
     if os.path.exists(ruta_metadatos):
-        with open(ruta_metadatos, 'r', encoding='utf-8') as f:
+        with open(ruta_metadatos, "r", encoding="utf-8") as f:
             config = yaml.safe_load(f)
         return config
     else:
         print(f"No se encontraron metadatos en {ruta_metadatos}.")
         return None
+
 
 def obtener_archivos_markdown(directorio, extension="*.md"):
     """Obtiene una lista de archivos Markdown en el directorio especificado."""
@@ -22,26 +24,32 @@ def obtener_archivos_markdown(directorio, extension="*.md"):
     archivos.sort()  # Ordenar los archivos alfabéticamente
     return archivos
 
+
 def ajustar_rutas_imagenes(contenido_md, ruta_actual):
     """Ajusta las rutas de las imágenes en el contenido Markdown."""
-    patron_imagen = r'!\[.*?\]\((.*?)\)'
+    patron_imagen = r"!\[.*?\]\((.*?)\)"
+
     def reemplazar(match):
         ruta_imagen = match.group(1)
-        if not ruta_imagen.startswith('http') and not os.path.isabs(ruta_imagen):
+        if not ruta_imagen.startswith("http") and not os.path.isabs(ruta_imagen):
             ruta_nueva = os.path.abspath(os.path.join(ruta_actual, ruta_imagen))
-            ruta_nueva = ruta_nueva.replace('\\', '/')  # Para compatibilidad con wkhtmltopdf en Windows
-            return f'![]({ruta_nueva})'
+            ruta_nueva = ruta_nueva.replace(
+                "\\", "/"
+            )  # Para compatibilidad con wkhtmltopdf en Windows
+            return f"![]({ruta_nueva})"
         else:
             return match.group(0)
+
     contenido_ajustado = re.sub(patron_imagen, reemplazar, contenido_md)
     return contenido_ajustado
+
 
 def combinar_markdown_a_html(archivos, ruta_css=None, ruta_logo=None, metadatos=None):
     """Combina varios archivos Markdown en HTML para la portada y el contenido principal."""
     # Construir el encabezado HTML
     html_head = "<!DOCTYPE html>\n<html>\n<head>\n<meta charset='utf-8'>\n"
     if ruta_css and os.path.exists(ruta_css):
-        with open(ruta_css, 'r', encoding='utf-8') as f:
+        with open(ruta_css, "r", encoding="utf-8") as f:
             css = f.read()
             html_head += f"<style>\n{css}\n</style>\n"
     html_head += "</head>\n<body>\n"
@@ -54,20 +62,22 @@ def combinar_markdown_a_html(archivos, ruta_css=None, ruta_logo=None, metadatos=
     if metadatos:
         portada = html_head
         portada += "<div class='portada'>\n"
-        if 'logo' in metadatos:
+        if "logo" in metadatos:
             # Construir la ruta completa al archivo del logo
-            ruta_logotipo = os.path.join(ruta_logo, metadatos['logo'])
+            ruta_logotipo = os.path.join(ruta_logo, metadatos["logo"])
             if os.path.exists(ruta_logotipo):
-                ruta_logotipo = os.path.abspath(ruta_logotipo).replace('\\', '/')
-                portada += f"<img src='file:///{ruta_logotipo}' alt='Logotipo' class='logo'>\n"
-        if 'codigo' in metadatos:
+                ruta_logotipo = os.path.abspath(ruta_logotipo).replace("\\", "/")
+                portada += (
+                    f"<img src='file:///{ruta_logotipo}' alt='Logotipo' class='logo'>\n"
+                )
+        if "codigo" in metadatos:
             portada += "\n \n"
             portada += f"<h3>{metadatos['codigo']}:</h3>\n"
-        if 'curso' in metadatos:
+        if "curso" in metadatos:
             portada += f"<h1>{metadatos['curso']}</h1>\n"
-        if 'institucion' in metadatos:
+        if "institucion" in metadatos:
             portada += f"<h3>{metadatos['institucion']}</h3>\n"
-        if 'fecha' in metadatos:
+        if "fecha" in metadatos:
             portada += f"<p>{metadatos['fecha']}</p>\n"
         portada += "</div>\n"
         portada += html_tail
@@ -91,7 +101,7 @@ def combinar_markdown_a_html(archivos, ruta_css=None, ruta_logo=None, metadatos=
 
     for index, archivo in enumerate(archivos):
         ruta_actual = os.path.dirname(archivo)
-        with open(archivo, 'r', encoding='utf-8') as f:
+        with open(archivo, "r", encoding="utf-8") as f:
             contenido_md = f.read()
             contenido_md = ajustar_rutas_imagenes(contenido_md, ruta_actual)
             html_contenido = md.convert(contenido_md)
@@ -102,11 +112,12 @@ def combinar_markdown_a_html(archivos, ruta_css=None, ruta_logo=None, metadatos=
 
     # Reemplazar el placeholder con la TOC generada
     toc_html = md.toc
-    cuerpo = cuerpo.replace('{{TOC}}', toc_html)
+    cuerpo = cuerpo.replace("{{TOC}}", toc_html)
 
     cuerpo += html_tail
 
     return portada, cuerpo
+
 
 def convertir_html_a_pdf(portada, cuerpo, salida_pdf, ruta_html, metadatos):
     """Convierte contenido HTML a PDF usando pdfkit, incluyendo números de página (excepto en la portada si existe)."""
@@ -146,48 +157,50 @@ def convertir_html_a_pdf(portada, cuerpo, salida_pdf, ruta_html, metadatos):
             f.write(portada)
         # Ajustar opciones para la portada
         opciones_pdf['page-offset'] = '-1'  # Resta 1 al número de página
-        opciones_pdf['cover'] = ruta_portada
+
+        # Generar el PDF con la portada usando el argumento 'cover'
+        pdfkit.from_file(
+            ruta_cuerpo,
+            salida_pdf,
+            options=opciones_pdf,
+            configuration=config,
+            cover=ruta_portada
+        )
     else:
         # Sin portada, iniciar la numeración desde la primera página
         opciones_pdf['page-offset'] = '0'
 
-    # Generar el PDF con o sin portada
-    if portada:
-        # Si hay portada, se incluye la opción 'cover'
+        # Generar el PDF sin portada
         pdfkit.from_file(
             ruta_cuerpo,
             salida_pdf,
             options=opciones_pdf,
             configuration=config
         )
-    else:
-        # Si no hay portada, se remueve la opción 'cover' si existe
-        opciones_pdf.pop('cover', None)
-        pdfkit.from_file(
-            ruta_cuerpo,
-            salida_pdf,
-            options=opciones_pdf,
-            configuration=config
-        )
+
 
 
 def main():
-    directorio_markdown = "./contenido"           # Directorio con los archivos Markdown
-    ruta_css = "./estilos/estilo.css"             # Ruta al archivo CSS
-    ruta_metadatos = "./metadatos/metadatos.yaml" # Ruta al archivo de metadatos
-    ruta_logo = "./logo"                          # Ruta al logotipo para la portada
-    ruta_html = "./html"                          # Ruta para los archivos HTML generados
-    salida_pdf = "documento_combinado.pdf"        # Nombre del archivo PDF final
+    directorio_markdown = "./contenido"  # Directorio con los archivos Markdown
+    ruta_css = "./estilos/estilo.css"  # Ruta al archivo CSS
+    ruta_metadatos = "./metadatos/metadatos.yaml"  # Ruta al archivo de metadatos
+    ruta_logo = "./logo"  # Ruta al logotipo para la portada
+    ruta_html = "./html"  # Ruta para los archivos HTML generados
+    salida_pdf = "documento_combinado.pdf"  # Nombre del archivo PDF final
 
     # Cargar los metadatos del documento
     metadatos = cargar_metadatos(ruta_metadatos)
 
     archivos = obtener_archivos_markdown(directorio_markdown)
     if not archivos:
-        print(f"No se encontraron archivos Markdown en el directorio {directorio_markdown}.")
+        print(
+            f"No se encontraron archivos Markdown en el directorio {directorio_markdown}."
+        )
         return
 
-    print(f"{len(archivos)} archivos Markdown encontrados en el directorio {directorio_markdown}")
+    print(
+        f"{len(archivos)} archivos Markdown encontrados en el directorio {directorio_markdown}"
+    )
 
     # Obtener el HTML de la portada y del contenido principal
     # Si no hay metadatos, no se generará la portada
@@ -197,6 +210,7 @@ def main():
     convertir_html_a_pdf(portada, cuerpo, salida_pdf, ruta_html, metadatos)
 
     print(f"PDF generado exitosamente: {salida_pdf}")
+
 
 if __name__ == "__main__":
     main()
