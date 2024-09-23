@@ -80,3 +80,29 @@ h1::before {
     margin-top: 20px;
     margin-bottom: 80px;
 }
+
+/* Estilo básico para tablas */
+table {
+    width: 100%; /* Ajusta el ancho de la tabla */
+    border-collapse: collapse; /* Evita que los bordes se dupliquen */
+    margin-bottom: 20px; /* Espacio inferior entre la tabla y el siguiente contenido */
+}
+
+th, td {
+    border: 1px solid #d3d3d3; /* Borde gris claro para las celdas */
+    padding: 10px; /* Espacio interno en celdas */
+    text-align: left; /* Alineación del texto en las celdas */
+}
+
+th {
+    background-color: #f8f8f8; /* Color de fondo para los encabezados */
+    font-weight: bold; /* Negrita para los encabezados */
+}
+
+td {
+    background-color: #ffffff; /* Fondo blanco para celdas de contenido */
+}
+
+table tr:nth-child(even) {
+    background-color: #f2f2f2; /* Fondo gris claro para las filas pares */
+}
