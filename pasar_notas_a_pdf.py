@@ -27,22 +27,20 @@ def obtener_archivos_markdown(directorio, extension="*.md"):
 
 
 def ajustar_rutas_imagenes(contenido_md, ruta_actual):
-    """Ajusta las rutas de las imágenes en el contenido Markdown."""
-    patron_imagen = r"!\[.*?\]\((.*?)\)"
-
+    """Ajusta las rutas de las imágenes en el contenido Markdown, conservando el texto alternativo."""
+    patron_imagen = r'!\[(.*?)\]\((.*?)\)'
     def reemplazar(match):
-        ruta_imagen = match.group(1)
-        if not ruta_imagen.startswith("http") and not os.path.isabs(ruta_imagen):
+        texto_alt = match.group(1)
+        ruta_imagen = match.group(2)
+        if not ruta_imagen.startswith('http') and not ruta_imagen.startswith('file:///') and not os.path.isabs(ruta_imagen):
             ruta_nueva = os.path.abspath(os.path.join(ruta_actual, ruta_imagen))
-            ruta_nueva = ruta_nueva.replace(
-                "\\", "/"
-            )  # Para compatibilidad con wkhtmltopdf en Windows
-            return f"![]({ruta_nueva})"
+            ruta_nueva = 'file:///' + ruta_nueva.replace('\\', '/')
+            return f'![{texto_alt}]({ruta_nueva})'
         else:
             return match.group(0)
-
     contenido_ajustado = re.sub(patron_imagen, reemplazar, contenido_md)
     return contenido_ajustado
+
 
 
 def combinar_markdown_a_html(archivos, ruta_css=None, ruta_logo=None, metadatos=None, incluir_toc=True):
@@ -201,7 +199,7 @@ def convertir_html_a_pdf(portada, cuerpo, salida_pdf, ruta_html, metadatos, incl
 
 def main():
     # Configurar el analizador de argumentos
-    parser = argparse.ArgumentParser(description='Genera un PDF a partir de archivos Markdown.')
+    parser = argparse.ArgumentParser(description='Este script genera un PDF a partir de uno o varios archivos Markdown.')
 
     # Definir los argumentos existentes y agregar el nuevo
     parser.add_argument('--sin-portada', action='store_true', help='No incluir la portada en el PDF.')
